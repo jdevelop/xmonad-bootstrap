@@ -1,0 +1,4 @@
+#!/bin/sh
+
+urxvt +sb +vb -bg black -fg green -geometry 116x50+0+0 -sl 2048 -tn rxvt -fn -xos4-terminus-medium-r-*-*-24-*-*-*-*-*-koi8-u $*
+#rxvt +sb +vb -bg black -fg green -geometry 106x40+0+0 -sl 2048 -tn rxvt -fn -xos4-terminus-medium-r-*-*-20-*-*-*-*-*-koi8-u $*

@@ -1,0 +1,125 @@
+#!/bin/zsh
+ 
+typeset -A DISKS
+###
+# Config
+###
+DATE_FORMAT="%d/%m/%Y [%a] %H:%M"
+DISKS=(root / home /home)
+SEPARATOR=' ^fg(#86AA3F)^c(3)^fg() '
+BAR_BG='#7DA926'
+BAR_FG='#B9D56E'
+BAR_HH=6
+BAR_HW=40
+BAR_VH=12
+BAR_VW=3
+ICON_DIR="$HOME/.share/icons/dzen"
+NETWORK_INTERFACE=ng0
+NET_DOWN_MAX=55
+NET_UP_MAX=14
+MAILDIR=~/Maildir/Inbox
+ 
+GLOBALIVAL=15
+DATEIVAL=1
+DISKIVAL=1
+ 
+ 
+###
+# Functions
+###
+_date()
+{
+    zptime=`TZ=Europe/Zaporozhye date +${DATE_FORMAT}`
+    localtime=`date +${DATE_FORMAT}`
+    echo "$zptime | $localtime"
+}
+ 
+#
+# Format: label1 mountpoint1 label2 mountpoint2 ... labelN mountpointN
+# Copied and modified from Rob
+get_disk_usage() {
+    local rstr; local tstr; local i; local sep
+    for i in ${(k)DISKS}; do
+        tstr=$(print `df -h $DISKS[$i]|sed -ne 's/^.* \([0-9]*\)% .*/\1/p'` 100 | \
+            gdbar -h $BAR_HH -w $BAR_HW -fg $BAR_FG -bg $BAR_BG -l "${i}" -nonl | \
+            sed 's/[0-9]\+%//g;s/  / /g')
+        if [ ! -z "$rstr" ]; then
+            sep=${SEPARATOR}
+        fi
+        rstr="${rstr}${sep}${tstr}"
+    done
+    print -n $rstr
+}
+
+get_mem_usage() {
+    /usr/bin/free | awk '/Mem:/ {printf "%1$d",$3 / $2 * 100;}' | gdbar -h $BAR_HH -w $BAR_HW -fg $BAR_FG -bg $BAR_BG -nonl
+}
+ 
+has_new_mail() {
+    find ${MAILDIR}/new -not -type d | wc -l
+}
+
+get_sound_volume() {
+    amixer -- get Master | awk '/Mono:/ {print $4}' | tr -d '[]%' | \
+        gdbar -h $BAR_HH -w $BAR_HW -fg $BAR_FG -bg $BAR_BG -nonl
+}
+
+get_traffice_usage() {
+    CUR_DATE=`date +%d-%m-%Y`
+    DATA_FILE=traffic/$CUR_DATE;
+    if ( /sbin/ifconfig wlan0 > /dev/null 2>&1 ) || ( /sbin/ifconfig wlan1 > /dev/null 2>&1 ) ;
+    then
+        scp -q home:$DATA_FILE $DATA_FILE
+    fi
+    ( if test -e $DATA_FILE;
+    then
+        awk '{total+=$1} END {printf ("%d Mb ",total/1024/1024)}' < $DATA_FILE;
+    else
+        echo -n "N/A"
+    fi )
+}
+
+ 
+DATEI=0
+NETI=0
+ 
+date=$(_date)
+disk_usage=$(get_disk_usage)
+ 
+while true; do
+    [[ $DATEI -ge $DATEIVAL ]] && date=$(_date) && DATEI=0
+    [[ $DISKI -ge $DISKIVAL ]] && disk_usage=$(get_disk_usage) && DISKI=0
+    sound_volume=$(get_sound_volume)
+    mem_usage=$(get_mem_usage)
+
+    #Music
+    #echo -n ${now_playing}${SEPARATOR}
+    #Volume
+    echo -n "Vol: ${sound_volume}${SEPARATOR}"
+    #Traffic
+    #get_traffice_usage;
+    echo -n "${SEPARATOR}"
+    acpi -b | awk -F , '{printf "%s %s",$2,$3;}'
+    echo -n "${SEPARATOR}"
+    # Battery usage
+    sudo $HOME/bin/CPUStats
+    echo -n "${SEPARATOR}"
+    # Memory usage
+    echo -n "Mem: ${mem_usage}"
+    echo -n ${SEPARATOR}
+    # Disk usage
+    echo -n "${disk_usage}${SEPARATOR}"
+    # Mail notification
+    MAILCNT=`has_new_mail`
+    if [ $MAILCNT -gt 0 ]; then
+        echo -n "^fg(#73d216)$MAILCNT"
+    fi
+    echo -n "^i(${ICON_DIR}/envelope.xbm)^fg()${SEPARATOR}"
+    # Time and date
+    echo "${date}"
+ 
+    DATEI=$(($DATEI+1))
+    DISKI=$(($DISKI+1))
+ 
+    sleep $GLOBALIVAL
+done

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+SCREEN=/usr/bin/screen
+SCREENNAME='mainscreen';
+SCREENOPTS="-U -S $SCREENNAME"
+
+if test "x`screen -wipe | grep Attach | grep $SCREENNAME`" != "x"
+    then
+	$SCREEN $SCREENOPTS -D -RR -X screen
+elif test "x`screen -wipe | grep Detach | grep $SCREENNAME`" != "x"
+    then
+	$HOME/xmonad-bin/rxvt-start -e $SCREEN $SCREENOPTS -D -RR
+elif test "x`screen -wipe | grep \"No Sockets found\"`" != ""
+    then
+	$HOME/xmonad-bin/rxvt-start -e $SCREEN $SCREENOPTS
+fi
