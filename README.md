@@ -22,6 +22,7 @@ Installation
     make
     mkdir ~/.xmonad
     cp xmonad-x86_64-linux ~/.xmonad
+    cp .screenrc ~/
     cp .xinitrc ~/
     cp -vR xmonad-bin ~/
 
